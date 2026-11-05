@@ -1,0 +1,9 @@
+{
+  "name": "nature-vibes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quiet, animated beach backgrounds for day and night.",
+  "type": "module",
+  "scripts": { "start": "node --watch server.js", "check": "node --check server.js && node --check public/app.js && node --check public/jungle.js" },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,33 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163f4b">
+  <meta name="description" content="Calm animated beach and jungle backgrounds.">
+  <title>Nature Vibes</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/jungle.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div id="jungle-backdrop" aria-hidden="true"></div>
+  <canvas id="scene" aria-label="Animated beach with gentle waves" role="img"></canvas>
+  <nav class="environment-bar" aria-label="Environment">
+    <button data-environment="beach" aria-pressed="true" title="Beach"><span aria-hidden="true">&#8776;</span><span>Beach</span></button>
+    <button data-environment="jungle" aria-pressed="false" title="Jungle"><span aria-hidden="true">&#10087;</span><span>Jungle</span></button>
+  </nav>
+  <div class="controls" aria-label="Scene controls">
+    <div class="switch" role="group" aria-label="Time of day">
+      <button data-mode="day" aria-pressed="true" aria-label="Day" title="Day">&#9788;</button>
+      <button data-mode="night" aria-pressed="false" aria-label="Night" title="Night">&#9789;</button>
+    </div>
+    <div class="switch" role="group" aria-label="Weather">
+      <button data-weather="clear" aria-pressed="true" aria-label="Clear weather" title="Clear">&#9728;</button>
+      <button data-weather="cloudy" aria-pressed="false" aria-label="Cloudy weather" title="Cloudy">&#9729;</button>
+      <button data-weather="rainy" aria-pressed="false" aria-label="Rainy weather" title="Rainy">&#9730;</button>
+    </div>
+    <button id="pause" class="icon-button" aria-label="Pause animation" title="Pause animation">&#8545;</button>
+  </div>
+</body>
+</html>

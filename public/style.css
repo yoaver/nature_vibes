@@ -1,0 +1,21 @@
+﻿:root { font-family: system-ui, sans-serif; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #153e4d; overflow: hidden; }
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; }
+.controls { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); right: max(20px, env(safe-area-inset-right)); display: flex; align-items: center; gap: 8px; }
+.switch { display: flex; padding: 4px; border: 1px solid #ffffff36; background: #153e493b; backdrop-filter: blur(18px); border-radius: 30px; }
+button { font: inherit; font-size: 22px; cursor: pointer; color: #fff; border: 0; background: transparent; width: 44px; height: 44px; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
+button:hover { background: #ffffff26; }
+button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.switch button[aria-pressed=true] { background: #f3f1e7; color: #244b50; }
+.icon-button { border: 1px solid #ffffff36; background: #153e493b; backdrop-filter: blur(18px); }
+.environment-bar { position: fixed; left: max(14px, env(safe-area-inset-left)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid #ffffff30; border-radius: 24px; background: #142f2e66; backdrop-filter: blur(18px); }
+.environment-bar button { width: 56px; height: 62px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.environment-bar button span:first-child { font-size: 25px; line-height: 1; }
+.environment-bar button span:last-child { font-size: 10px; }
+.environment-bar button[aria-pressed=true] { background: #eff2df; color: #244b40; }
+@media (max-width: 600px) { .environment-bar { left: 8px; padding: 4px; } .environment-bar button { width: 45px; height: 55px; } }
+@media (max-width: 400px) {
+  .controls { right: 10px; gap: 5px; }
+  button { width: 40px; height: 40px; }
+}

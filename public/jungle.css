@@ -1,0 +1,97 @@
+/* Original CSS artwork informed by the linked demos in README.md.
+   Shapes are HTML + CSS; JavaScript only places them and sets lighting variables. */
+#jungle-backdrop {
+  --night: 0; --overcast: 0; --rain: 0;
+  position: fixed; inset: 0 0 17% 0; overflow: hidden; display: none;
+  background: linear-gradient(#78b4c7, #b9d8d3 65%, #d8dfbe);
+  pointer-events: none; isolation: isolate;
+}
+body[data-environment=jungle] #jungle-backdrop { display: block; }
+#jungle-backdrop::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(ellipse at 68% 20%, #fff5cf88, transparent 38%),
+    radial-gradient(ellipse 18vw 3vh at 23% 18%, #fff9e65c, transparent),
+    radial-gradient(ellipse 21vw 4vh at 70% 33%, #fff9e64d, transparent);
+}
+#jungle-backdrop::after {
+  content: ''; position: absolute; inset: 0; z-index: 5;
+  background: transparent;
+  box-shadow: inset 0 0 25vw rgba(60, 77, 79, calc(var(--overcast) * .28));
+}
+.forest-interior { position: absolute; inset: 0; }
+.jungle-forest { position: absolute; inset: 0; transform: scale(1.2); transform-origin: 50% 100%; }
+.jungle-night-sky { position: absolute; inset: 0; background: #070b0c; opacity: var(--night); }
+.jungle-rain-sky { position: absolute; inset: 0; background: linear-gradient(#737d7d, #a0aaa6 65%, #b2bbb0); opacity: var(--rain); filter: brightness(calc(1 - var(--night) * .9)); }
+.jungle-night-sky i { position: absolute; left: var(--x); top: var(--top); width: var(--size); height: var(--size); border-radius: 50%; background: #f4f1da; opacity: .7; animation: star-twinkle var(--duration) var(--delay) ease-in-out infinite alternate; }
+@keyframes star-twinkle { from { opacity: .35; } to { opacity: .85; } }
+.forest-depth, .forest-interior, .jungle-ground, .bank-bush, .bank-plant { filter: brightness(calc(1 + var(--jungle-sun, 0) * .22 - var(--night) * .73)) saturate(calc(1 + var(--jungle-sun, 0) * .08)); }
+body[data-environment=jungle] #scene { filter: brightness(calc(1 + var(--jungle-sun, 0) * .2)) saturate(calc(1 + var(--jungle-sun, 0) * .08)); }
+.forest-interior::before { content: ''; position: absolute; inset: 68% 0 0; background: #476b59; }
+.forest-interior span { position: absolute; left: var(--x); top: var(--top); width: var(--width); height: var(--height); background: var(--shade); border-radius: 45% 55% 0 0 / 15% 18% 0 0; }
+.jungle-clouds { position: absolute; inset: 0; opacity: var(--overcast); background: linear-gradient(#8eaaa966, #b7c5bd38 50%, transparent 70%); filter: brightness(calc(1 - var(--night) * .86)); }
+.jungle-cloud { position: absolute; left: var(--x); top: var(--top); width: var(--width); height: var(--height); animation: cloud-drift var(--duration) ease-in-out infinite alternate; }
+.jungle-cloud span { position: absolute; left: var(--cx); top: var(--cy); width: var(--cw); height: var(--ch); border-radius: 55% 48% 40% 45% / 65% 60% 30% 35%; background: #cbd5cc; }
+@keyframes cloud-drift { from { transform: translateX(-2vw); } to { transform: translateX(4vw); } }
+.forest-depth { position: absolute; inset: 0; }
+.forest-depth.far { --foliage: #88aaa0; --leaf-light: #a2bdb0; --bark: #718e83; opacity: .75; filter: brightness(calc(1 + var(--jungle-sun, 0) * .22 - var(--night) * .73)) saturate(calc(1 + var(--jungle-sun, 0) * .08)) blur(.8px); }
+.forest-depth.middle { --foliage: #527f6a; --leaf-light: #7eaa83; --bark: #566d55; }
+.forest-depth.front { --foliage: #356d50; --leaf-light: #74a36d; --bark: #5d6851; }
+.depth-undergrowth { position: absolute; left: var(--x); bottom: var(--bottom); width: var(--width); height: var(--height); background: var(--shade); border-radius: 44% 56% 32% 48% / 65% 72% 30% 25%; }
+.css-tree { position: absolute; bottom: var(--bottom, 2%); left: var(--x); height: var(--height); width: var(--width); transform: translateX(-50%); }
+.css-trunk {
+  position: absolute; height: 66%; width: var(--trunk-width, 3%); bottom: 0; left: 49%; opacity: .75;
+  background: var(--bark);
+  border-radius: 70% 30% 15% 45% / 60% 100% 20% 30%;
+  transform: rotate(var(--lean)); transform-origin: bottom;
+}
+.css-tree.broadleaf .css-trunk::before, .css-tree.broadleaf .css-trunk::after {
+  content: ''; position: absolute; width: 80%; height: 38%; bottom: 49%;
+  background: var(--bark); border-radius: 80% 30% 0 0; transform: rotate(-39deg); transform-origin: bottom;
+}
+.css-tree.broadleaf .css-trunk::after { transform: rotate(44deg); height: 29%; bottom: 58%; }
+.css-crown { position: absolute; inset: 0 0 var(--crown-bottom, 32%); transform-origin: 50% 90%; animation: canopy-breathe var(--duration) ease-in-out infinite alternate; }
+.css-crown .liana { position: absolute; left: var(--vine-x); top: var(--vine-y); width: var(--vine-width); height: var(--vine-length); border: 1.5px solid color-mix(in srgb, var(--foliage), #293f29 35%); border-top: 0; border-radius: 0 0 45% 58% / 0 0 78% 92%; background: transparent; transform: none; }
+.css-crown > span:not(.liana) {
+  position: absolute; left: var(--cx); top: var(--cy); width: var(--cw); height: var(--ch);
+  border-radius: var(--blob, 43% 57% 61% 39% / 55% 48% 52% 45%);
+  background: var(--foliage);
+  box-shadow: none;
+  transform: rotate(var(--turn));
+}
+.css-tree.palm .css-trunk { height: 94%; width: 3.3%; border-radius: 90% 15% 20% 30%; transform: rotate(var(--lean)); }
+.palm-crown { position: absolute; left: 50%; top: 5%; width: 1px; height: 1px; animation: palm-breathe var(--duration) ease-in-out infinite alternate; }
+.palm-frond {
+  position: absolute; width: var(--length); height: var(--arc); left: 0; top: 0;
+  border-top: max(1px, .25vmin) solid var(--leaf-light); border-radius: 50% 70% 0 0;
+  transform: rotate(var(--angle)); transform-origin: 0 0;
+}
+.palm-frond i {
+  position: absolute; left: var(--along); top: var(--drop); width: var(--blade); height: max(2px, .85vmin);
+  border-radius: 100% 0 100% 0;
+  background: linear-gradient(0deg, var(--foliage), var(--leaf-light));
+  transform: rotate(var(--tilt)); transform-origin: left center;
+}
+.jungle-ground {
+  position: absolute; bottom: -2%; left: -2%; width: 104%; height: 7%; z-index: 3;
+  background: linear-gradient(#6e8e61, #526e50 70%, #596b4c);
+  border-radius: 36% 45% 0 0 / 14% 16% 0 0;
+}
+.bank-plant { position: absolute; bottom: 3%; left: var(--x); width: var(--width); height: var(--height); z-index: 3; }
+.bank-plant span {
+  position: absolute; bottom: 0; left: 50%; width: 37%; height: var(--length);
+  background: #678d58;
+  border-radius: 100% 0 95% 0; transform-origin: bottom left;
+  transform: rotate(var(--angle)); animation: understory-sway var(--duration) ease-in-out infinite alternate;
+}
+.forest-haze { position: absolute; inset: 40% 0 3%; background: linear-gradient(transparent, #d4dfc927 70%, transparent); opacity: calc(1 - var(--night) * .85); pointer-events: none; }
+.css-tree.broadleaf .css-trunk::before, .css-tree.broadleaf .css-trunk::after { display: none; }
+.bank-bush { position: absolute; bottom: 3%; left: var(--x); width: var(--width); height: var(--height); z-index: 4; animation: canopy-breathe var(--duration) ease-in-out infinite alternate; transform-origin: bottom; }
+.bush-shoot { position: absolute; bottom: 0; left: var(--shoot-x); width: 24%; height: var(--shoot-height); transform: rotate(var(--lean)); transform-origin: 50% 100%; }
+.bush-shoot::before { content: ''; position: absolute; left: 50%; bottom: 0; width: max(1px, .1vw); height: 100%; border-radius: 80% 20% 0 0; background: #56704a; }
+.bush-leaf { position: absolute; left: 50%; top: var(--leaf-top); width: var(--leaf-length); height: 12%; border-radius: 90% 10% 85% 15%; background: var(--leaf-shade); transform: rotate(var(--leaf-angle)); transform-origin: 0 50%; }
+.bush-lobe { position: absolute; left: var(--cx); top: var(--cy); width: var(--cw); height: var(--ch); border-radius: 44% 56% 39% 61% / 65% 55% 45% 35%; background: var(--shade); transform: rotate(var(--turn)); }
+@keyframes canopy-breathe { from { transform: rotate(-.4deg); } to { transform: rotate(.5deg); } }
+@keyframes palm-breathe { from { transform: rotate(-1deg); } to { transform: rotate(1deg); } }
+@keyframes understory-sway { to { transform: rotate(calc(var(--angle) + 1.5deg)); } }
+body.paused #jungle-backdrop *, body.paused #jungle-backdrop *::before { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { #jungle-backdrop * { animation: none !important; } }
