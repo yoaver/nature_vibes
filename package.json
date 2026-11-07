@@ -4,6 +4,11 @@
   "private": true,
   "description": "Quiet, animated beach backgrounds for day and night.",
   "type": "module",
-  "scripts": { "start": "node --watch server.js", "check": "node --check server.js && node --check public/app.js && node --check public/jungle.js" },
-  "engines": { "node": ">=20" }
+  "scripts": {
+    "start": "node --watch server.js",
+    "check": "node --check server.js && node --check public/app.js && node --check public/jungle.js && node --check public/jungle-wildlife.js && node --check public/bat-models.js && node --check public/jungle-birds.js && node --check public/jungle-monkeys.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }

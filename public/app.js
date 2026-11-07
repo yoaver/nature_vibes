@@ -1,4 +1,4 @@
-import { drawJungle } from './jungle.js';
+import { drawJungle, jungleRiverTop, resetJungleAnimal, setJunglePaused } from './jungle.js';
 
 let environment = 'beach';
 try { if (localStorage.getItem('nature-vibes-environment') === 'jungle') environment = 'jungle'; } catch {}
@@ -159,23 +159,31 @@ function drawWeatherClouds() {
   drawCloud(x, y, width, Math.min(h * .1, width * .22) * (distant ? .5 : 1), opacity, i + 3500);
  }
 }
-function drawRain(horizon) {
+function drawRain(horizon, riverTop = null) {
  if (rainfall < .001) return;
  ctx.save(); ctx.globalAlpha = rainfall;
- ctx.strokeStyle = `rgba(204,225,231,${.3 - night * .1})`;
- ctx.lineWidth = 1; ctx.beginPath();
- for (let i = 0; i < Math.min(650, Math.round(w * .45)); i++) {
-  const depth = .35 + random(i + 3600) * .65;
+ for (let i = 0; i < Math.min(470, Math.round(w * .33)); i++) {
+  const depth = .12 + random(i + 3600) * .88;
+  ctx.strokeStyle=`rgba(204,225,231,${(.075+depth*.19)*(1-night*.35)})`;
+  ctx.lineWidth=.35+depth*.65;ctx.beginPath();
   const y = (random(i + 3700) * h + time * (260 + depth * 330)) % (h + 30) - 20;
   const x = (random(i + 3800) * (w + 100) - time * 65 * depth % (w + 100) + w + 100) % (w + 100) - 50;
-  ctx.moveTo(x, y); ctx.lineTo(x - 4 * depth, y + 18 * depth);
+  ctx.moveTo(x, y); ctx.lineTo(x - 3 * depth, y + 4+14 * depth);ctx.stroke();
  }
- ctx.stroke();
+ if (riverTop) {
+  // Clip splash rings to the exact same curved boundary as the river fill.
+  ctx.beginPath(); ctx.moveTo(0, riverTop(0));
+  for (let x = 0; x <= w + 8; x += 8) ctx.lineTo(x, riverTop(x));
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.clip();
+ }
  for (let i = 0; i < 65; i++) {
   const phase = (time * .8 + random(i + 4000)) % 1;
-  const y = horizon + h * (.03 + random(i + 4100) * .29);
+  const x = random(i + 4200) * w;
+  const top = riverTop ? riverTop(x) : horizon;
+  const y = riverTop ? top + 3 + random(i + 4100) * Math.max(0, h - top - 6)
+   : horizon + h * (.03 + random(i + 4100) * .29);
   ctx.strokeStyle = `rgba(211,233,234,${(1 - phase) * .2})`;
-  ctx.beginPath(); ctx.ellipse(random(i + 4200) * w, y, 1 + phase * 8, .5 + phase * 1.5, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x, y, 1 + phase * 8, .5 + phase * 1.5, 0, 0, Math.PI * 2); ctx.stroke();
  }
  ctx.restore();
 }
@@ -189,7 +197,7 @@ function render(){
  if (environment === 'jungle') {
   ctx.clearRect(0, 0, w, h);
   drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, random });
-  drawRain(h * .65);
+  drawRain(h * .816, x => jungleRiverTop(x, w, h));
   return;
  }
  const horizon=h*.49;
@@ -248,6 +256,7 @@ function updateDescription() {
 function setEnvironment(next) {
  if (!['beach', 'jungle'].includes(next)) return;
  environment = next;
+ if (next !== 'jungle') resetJungleAnimal();
  document.body.dataset.environment = next;
  document.querySelectorAll('[data-environment]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.environment === next)));
  try { localStorage.setItem('nature-vibes-environment', next); } catch {}
@@ -257,6 +266,7 @@ document.querySelectorAll('[data-environment]').forEach(button => button.addEven
 function setWeather(next) {
  if (!Object.hasOwn(weatherPresets, next)) return;
  weather = next;
+ document.body.dataset.weather=next;
  document.querySelectorAll('[data-weather]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.weather === next)));
  try { localStorage.setItem('nature-vibes-weather', next); } catch {}
  if (reduced.matches || paused) {
@@ -269,6 +279,8 @@ function setWeather(next) {
 document.querySelectorAll('[data-weather]').forEach(button => button.addEventListener('click', () => setWeather(button.dataset.weather)));
 function setMode(next){
  mode=next;target=next==='night'?1:0;
+ document.body.dataset.time = next;
+ resetJungleAnimal();
  document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===next)));
  updateDescription();
  try{localStorage.setItem('nature-vibes-scene',next);}catch{}
@@ -276,7 +288,7 @@ function setMode(next){
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 const pauseButton=document.querySelector('#pause');
-function updatePause(){pauseButton.textContent=paused?'▷':'Ⅱ';pauseButton.title=paused?'Resume animation':'Pause animation';pauseButton.setAttribute('aria-label',pauseButton.title);document.body.classList.toggle('paused', paused);}
+function updatePause(){pauseButton.textContent=paused?'▷':'Ⅱ';pauseButton.title=paused?'Resume animation':'Pause animation';pauseButton.setAttribute('aria-label',pauseButton.title);document.body.classList.toggle('paused', paused);setJunglePaused(paused);}
 pauseButton.addEventListener('click',()=>{paused=!paused;updatePause();});
 reduced.addEventListener('change',()=>{paused=reduced.matches;updatePause();});
 addEventListener('resize',resize);

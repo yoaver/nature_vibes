@@ -19,6 +19,10 @@ const assets = new Map([
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/jungle.js', ['jungle.js', 'text/javascript; charset=utf-8']],
+  ['/jungle-wildlife.js', ['jungle-wildlife.js', 'text/javascript; charset=utf-8']],
+  ['/bat-models.js', ['bat-models.js', 'text/javascript; charset=utf-8']],
+  ['/jungle-birds.js', ['jungle-birds.js', 'text/javascript; charset=utf-8']],
+  ['/jungle-monkeys.js', ['jungle-monkeys.js', 'text/javascript; charset=utf-8']],
   ['/jungle.css', ['jungle.css', 'text/css; charset=utf-8']],
 ]);
 const port = Number(process.env.PORT || 3000);

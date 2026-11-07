@@ -1,5 +1,15 @@
+import { addBatRoost, resetBats, pauseBats, addCaimans, addCapybaras, resetBankReactions, addAmbientBats, updateGrazingCapybaras } from './jungle-wildlife.js';
+import { addMacawRoost, resetDayWildlife, pauseDayWildlife, addAmbientMacaws, placeButterfliesInDepth, updateDayWildlifeWeather, updatePerchedMacaws } from './jungle-birds.js';
+import { addSquirrelMonkeys, updateSquirrelMonkeys } from './jungle-monkeys.js';
 // CSS draws the forest. Canvas retains the river, nearby foliage, and fireflies.
 const backdrop = document.querySelector('#jungle-backdrop');
+export const jungleRiverTop = (x, w, h) => {
+ const u=x/w;
+ return h*(.814+Math.sin(u*5+.4)*.006+.033*Math.exp(-(((u-.26)/.115)**2))+.044*Math.exp(-(((u-.61)/.14)**2))+.022*Math.exp(-(((u-.9)/.09)**2))+.0008*Math.sin(u*87)+.0005*Math.sin(u*143));
+};
+const resetAnimals = [];
+export function resetJungleAnimal() { resetAnimals.forEach(reset=>reset()); resetBats(); resetDayWildlife(); resetBankReactions(); }
+export function setJunglePaused(paused) { pauseBats(paused); pauseDayWildlife(paused); }
 function seeded(seed) { const value = Math.sin(seed * 127.1 + 311.7) * 43758.5453; return value - Math.floor(value); }
 function shape(tag, className, parent, variables = {}) {
  const node = document.createElement(tag);
@@ -64,8 +74,15 @@ for (const [depth, count] of [['far', 15], ['middle', 10], ['front', 5]]) {
    'crown-bottom': `${[37, 23, 31, 43][profile]}%`,
   });
   shape('span', 'css-trunk', tree);
+  if(depth==='front'&&(i===1||i===2||i===4)) {
+   const plant=shape('span','trunk-epiphyte',tree,{ 'plant-bottom':i===2?'28%':'43%' });
+   for(let leaf=0;leaf<4;leaf++)shape('i','',plant,{'leaf-turn':`${-55+leaf*31}deg`});
+  }
   {
    const crown = shape('div', 'css-crown', tree);
+   // Open a narrow view into the left background troop's tree.
+   if(depth==='front'&&i===0)crown.style.right='12%';
+   if(depth==='front'&&i===1)crown.style.left='16%';
    // Both ends start inside the crown and share its motion, never in open air.
    if (depth !== 'far' && i % 3 !== 1) {
     shape('span', 'liana', crown, {
@@ -81,6 +98,14 @@ for (const [depth, count] of [['far', 15], ['middle', 10], ['front', 5]]) {
      blob: `${37 + seeded(seed + j + 30) * 25}% ${42 + seeded(seed + j + 31) * 20}% ${33 + seeded(seed + j + 32) * 30}% ${48 + seeded(seed + j + 33) * 20}% / ${40 + seeded(seed + j + 34) * 25}% ${45 + seeded(seed + j + 35) * 25}% ${35 + seeded(seed + j + 36) * 25}% ${40 + seeded(seed + j + 37) * 25}%`,
     });
    }
+   if (depth === 'front' && (i === 1 || i === 3)) addBatRoost(crown);
+   if (depth === 'front' && (i === 0 || i === 3)) addMacawRoost(crown);
+   if (depth === 'middle' && (i === 2 || i === 7)) addBatRoost(crown,1);
+   if (depth==='front'&&(i===0||i===4))addBatRoost(crown,2);
+   if (depth === 'middle' && (i === 1 || i === 6)) addMacawRoost(crown,1);
+   if (depth === 'front' && (i === 1 || i === 4)) addMacawRoost(crown,2);
+   if (depth === 'middle' && i === 2) addSquirrelMonkeys(tree,7,true);
+   if (depth === 'front' && i === 2) addSquirrelMonkeys(tree);
   }
  }
  // Low foliage hides distant roots; nearer trunks overlap it instead of sharing a baseline.
@@ -92,24 +117,92 @@ for (const [depth, count] of [['far', 15], ['middle', 10], ['front', 5]]) {
    shade: depth === 'far' ? '#6b8e79' : '#4c765a',
   });
  }
+ if(depth==='middle') { addAmbientBats(layer);addAmbientMacaws(layer); }
 }
 shape('div', 'forest-haze', forestScene);
 shape('div', 'jungle-ground', forestScene);
-for (let shrub = 0; shrub < 10; shrub++) {
+for (let shrub = 0; shrub < 12; shrub++) {
  const seed = 2000 + shrub * 19;
  const large = shrub % 3 === 0;
+ const feature = shrub >= 10;
+ const animalHome = shrub === 3 || shrub === 6;
+ const secondHome = shrub === 6;
+ const homeX = secondHome ? '17%' : '56%';
+ const homeWidth=secondHome?'max(9vw, 64px)':'max(8vw, 58px)';
+ let shrubX = seeded(seed) * 100;
+ if (!feature && !animalHome && shrubX > 33 && shrubX < 70) shrubX = shrub % 2 ? 14 + seeded(seed + 9) * 10 : 82 + seeded(seed + 9) * 8;
+ if (!feature && !animalHome && shrubX > 15 && shrubX < 31) shrubX=87+seeded(seed+10)*7;
  const bush = shape('div', 'bank-bush', forestScene, {
-  x: `${seeded(seed) * 100}%`, width: `${(large ? 9 : 5) + seeded(seed + 1) * 8}vw`,
-  height: `${(large ? 8 : 4) + seeded(seed + 2) * 5}%`, duration: `${11 + seeded(seed + 3) * 7}s`,
-  shade: shrub % 3 ? '#4c7b55' : '#638b5c',
+  x: animalHome ? homeX : feature ? (shrub === 10 ? '2%' : '77%') : `${shrubX}%`,
+  width: animalHome ? homeWidth : feature ? (shrub === 10 ? '13vw' : '16vw') : `${(large ? 9 : 5) + seeded(seed + 1) * 8}vw`,
+  height: animalHome ? (secondHome?'9%':'11%') : feature ? (shrub === 10 ? '17%' : '20%') : `${(large ? 8 : 4) + seeded(seed + 2) * 5}%`,
+  duration: `${11 + seeded(seed + 3) * 7}s`,
+  shade: secondHome?'#567e50':feature ? (shrub === 10 ? '#547e52' : '#48734e') : shrub % 3 ? '#4c7b55' : '#638b5c',
  });
  // Mix rounded shrubs with open leafy shoots along the bank.
- if (shrub % 3 === 0) {
+ if (feature || animalHome || shrub % 3 === 0) {
   bush.classList.add('rounded-bush');
-  for (const [lobe, [x, y, width, height]] of [[-4,38,48,59],[24,8,48,87],[52,29,50,67],[18,54,66,44]].entries()) {
+  const lobes=secondHome?[[-3,45,43,52],[12,24,43,72],[40,10,37,86],[65,38,38,60],[24,57,63,42]]:[[-4,38,48,59],[24,8,48,87],[52,29,50,67],[18,54,66,44]];
+  for (const [lobe, [x, y, width, height]] of lobes.entries()) {
    shape('span', 'bush-lobe', bush, {
     cx: `${x}%`, cy: `${y + seeded(seed + lobe + 40) * 9}%`, cw: `${width}%`, ch: `${height}%`,
     turn: `${(seeded(seed + lobe + 50) - .5) * 14}deg`,
+   });
+  }
+  if (animalHome) {
+   bush.classList.add('armadillo-home');
+   if(!secondHome)bush.classList.add('moonlit-bush');
+   const eyes = shape('button', 'hidden-animal', bush);
+   eyes.dataset.animal=secondHome?'1':'0';
+   eyes.type = 'button';
+   eyes.setAttribute('aria-label', 'Watch the armadillo explore');
+   eyes.title = 'Watch the armadillo explore';
+   const pair = shape('div', 'animal-eye-pair', eyes);
+   shape('i', 'animal-eye', pair);
+   shape('i', 'animal-eye', pair);
+   // The animal occupies a layer behind the bushes, so foliage hides its emergence.
+   const track = shape('div', 'armadillo-track', forestScene, {
+    'home-x': homeX, 'home-width': homeWidth,
+    ...(secondHome ? {walk:'clamp(-75px, -4vw, -45px)','initial-facing':-1,outing:'19s'} : {}),
+   });
+   track.setAttribute('aria-hidden', 'true');
+   track.dataset.animal=secondHome?'1':'0';
+   const animal = shape('div', 'armadillo', track);
+   shape('i', 'armadillo-tail', animal);
+   shape('i', 'armadillo-leg rear', animal);
+   shape('i', 'armadillo-leg fore', animal);
+   shape('i', 'armadillo-leg rear far', animal);
+   shape('i', 'armadillo-leg fore far', animal);
+   const shell = shape('div', 'armadillo-shell', animal);
+   for (let band = 0; band < 3; band++) shape('i', 'armadillo-band', shell, { band });
+   const head = shape('div', 'armadillo-head', animal);
+   shape('i', 'armadillo-ear', head);
+   shape('i', 'armadillo-ear far', head);
+   shape('i', 'armadillo-eye', head);
+   let reducedTimer;
+   let outingVersion = 0;
+   const resetAnimal = () => {
+    outingVersion++;
+    clearTimeout(reducedTimer);
+    bush.classList.remove('animal-out');
+    track.classList.remove('is-exploring');
+    eyes.disabled = false;
+    eyes.setAttribute('aria-busy', 'false');
+   };
+   resetAnimals.push(resetAnimal);
+   eyes.addEventListener('click', () => {
+    if (eyes.disabled || document.body.dataset.time !== 'night') return;
+    bush.classList.add('animal-out');
+    track.classList.add('is-exploring');
+    eyes.disabled = true;
+    eyes.setAttribute('aria-busy', 'true');
+    const version = ++outingVersion;
+    const outing = track.getAnimations().find(animation => animation.animationName === 'armadillo-explore');
+    outing?.finished.then(() => { if (version === outingVersion) resetAnimal(); }).catch(() => {});
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) reducedTimer = setTimeout(resetAnimal, 1600);
+   });
+   track.addEventListener('animationend', event => {
+    if (event.target === track && event.animationName === 'armadillo-explore') resetAnimal();
    });
   }
   continue;
@@ -131,10 +224,59 @@ for (let shrub = 0; shrub < 10; shrub++) {
  }
 }
 for (let plant = 0; plant < 17; plant++) {
- const clump = shape('div', 'bank-plant', forestScene, { x: `${seeded(plant + 1400) * 100}%`, width: 'clamp(22px, 3.5vw, 65px)', height: `${4 + seeded(plant + 1450) * 8}%`, duration: `${8 + seeded(plant + 1500) * 6}s` });
+ let plantX = seeded(plant + 1400) * 100;
+ if (plantX > 36 && plantX < 70) plantX = plant % 2 ? 29 + seeded(plant + 1455) * 3 : 72 + seeded(plant + 1455) * 3;
+ if(plantX>16&&plantX<31)plantX=5+seeded(plant+1456)*7;
+ // A smaller, narrower fern stays beside the mother without crossing her muzzle.
+ const besideCapybara=plantX>=31&&plantX<38;
+ if(besideCapybara)plantX=33;
+ const clump = shape('div', 'bank-plant', forestScene, { x: `${plantX}%`, width: besideCapybara?'clamp(18px, 2vw, 36px)':'clamp(22px, 3.5vw, 65px)', height: besideCapybara?'5.5%':`${4 + seeded(plant + 1450) * 8}%`, duration: `${8 + seeded(plant + 1500) * 6}s` });
  for (let blade = 0; blade < 5; blade++) shape('span', '', clump, { angle: `${-65 + blade * 29 + seeded(plant + blade + 1600) * 12}deg`, length: `${55 + seeded(plant + blade + 1700) * 45}%` });
 }
+addCaimans(forestScene);
+addCapybaras(forestScene);
+placeButterfliesInDepth(forestScene);
+// Foreground bank and rain clipping share the river's shoreline curve.
+const nearBank=shape('div','jungle-near-bank',document.body);
+const nearGround=shape('div','jungle-ground near-bank-ground',nearBank);
+const shoreDetails=document.createElementNS('http://www.w3.org/2000/svg','svg');
+shoreDetails.classList.add('shore-details');nearBank.append(shoreDetails);
+const nearerAnimals=[
+ [forestScene.querySelectorAll('.river-caiman')[1],.49],
+ [forestScene.querySelectorAll('.river-caiman')[2],.23],
+ [forestScene.querySelectorAll('.river-caiman')[3],.57],
+ [forestScene.querySelectorAll('.river-capybara')[3],.67],
+ [forestScene.querySelectorAll('.river-capybara')[4],.76],
+ [forestScene.querySelectorAll('.river-capybara')[7],.81],
+ [forestScene.querySelectorAll('.river-capybara')[8],.905],
+ [forestScene.querySelectorAll('.river-capybara')[9],.875],
+];
+for(const [animal,x] of nearerAnimals) {
+ animal.classList.add('near-bank-animal');animal.style.setProperty('--x',`${x*100}%`);nearBank.append(animal);
+}
+function placeNearBank() {
+ const w=innerWidth,h=innerHeight;
+ const edge=Array.from({length:101},(_,i)=>`${i}% ${jungleRiverTop(i/100*w,w,h)/h*100}%`);
+ nearGround.style.clipPath=`polygon(0 81.4%,100% 81.4%,${edge.reverse().join(',')})`;
+ shoreDetails.setAttribute('viewBox',`0 0 ${w} ${h}`);shoreDetails.setAttribute('preserveAspectRatio','none');
+ let marks='';
+ for(const u of [.085,.48,.79,.93]) {
+  const x=u*w,y=jungleRiverTop(x,w,h)-h*.004;
+  marks+=`<path class="shore-root" d="M${x-11} ${y-11} Q${x-6} ${y-2} ${x+12} ${y} M${x-3} ${y-5} Q${x+5} ${y-8} ${x+18} ${y-3}"/>`;
+ }
+ for(let i=0;i<23;i++) {
+  const x=seeded(i+6100)*w,y=jungleRiverTop(x,w,h)-h*(.004+seeded(i+6200)*.009);
+  marks+=`<path class="shore-leaf" d="M${x} ${y} q4 -4 7 -1 q-2 4 -7 1" opacity="${.22+seeded(i+6300)*.2}"/>`;
+ }
+ shoreDetails.innerHTML=marks;
+ for(const [animal,x] of nearerAnimals)if(!animal.dataset.sleepGroup)animal.style.bottom=`${100-jungleRiverTop(x*w,w,h)/h*100+.6}%`;
+}
+addEventListener('resize',placeNearBank);placeNearBank();
 export function drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, random }) {
+ updateSquirrelMonkeys(time,night);
+ updateGrazingCapybaras(time);
+ updateDayWildlifeWeather();
+ updatePerchedMacaws(time);
  const gradient = (top, bottom, colors) => {
   const g = ctx.createLinearGradient(0, top, 0, bottom);
   colors.forEach((color, i) => g.addColorStop(i / (colors.length - 1), color));
@@ -147,10 +289,14 @@ export function drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, 
  backdrop.style.setProperty('--night', night);
  backdrop.style.setProperty('--overcast', cloudCover);
  backdrop.style.setProperty('--rain', rainfall);
+ const moon=document.body.dataset.weather==='clear'?night*Math.max(0,1-cloudCover/.8)**2:0;
+ backdrop.style.setProperty('--moon',moon);
+ nearBank.style.setProperty('--night',night);
+ nearBank.style.setProperty('--moon',moon);
  const sunshine = (1 - night) * (1 - cloudCover);
  document.body.style.setProperty('--jungle-sun', sunshine);
  // Side-facing view from a boat: the water continues all the way to the frame.
- const farBank = x => h * (.816 + Math.sin(x / w * 5 + .4) * .007);
+ const farBank = x => jungleRiverTop(x, w, h);
  ctx.fillStyle = gradient(h * .816, h, [mix('#a5c6a1', '#172e25'), mix('#5a9a80', '#10251e'), mix('#427d65', '#0b1c17')]);
  ctx.beginPath(); ctx.moveTo(0, farBank(0));
  for (let x = 0; x <= w + 8; x += 8) ctx.lineTo(x, farBank(x));
@@ -183,11 +329,19 @@ export function drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, 
   ctx.beginPath(); ctx.moveTo(x, y);
   ctx.quadraticCurveTo(x + length * .5, y - h * .001, x + length, y); ctx.stroke();
  }
+ // Broken reflections follow the localized moonlight on the bank.
+ for (let i = 0; i < 45; i++) {
+  const depth = random(i + 4600);
+  const x = w * .67 + (random(i + 4700) - .5) * w * (.025 + depth * .13);
+  const y = farBank(x) + depth * (h - farBank(x));
+  ctx.fillStyle = `rgba(193,216,211,${moon * (.035 + random(i + 4800) * .055)})`;
+  ctx.fillRect(x + Math.sin(time * .4 + i) * 3, y, 3 + depth * 20, .7 + depth * .5);
+ }
  ctx.restore();
 
  // Waterline anchors the visible opposite bank above the foreground water.
- ctx.strokeStyle = mix('#2b4c36', '#102e30'); ctx.lineWidth = h * .004;
- ctx.beginPath(); for (let x = 0; x <= w + 8; x += 8) { if (!x) ctx.moveTo(x, farBank(x)); else ctx.lineTo(x, farBank(x)); } ctx.stroke();
+ ctx.strokeStyle = mix('#45664b', '#18362f'); ctx.lineWidth = h * .002;
+ ctx.beginPath(); for (let x = 0; x <= w + 8; x += 4) { if (Math.floor(x/31)%4===0)ctx.moveTo(x,farBank(x));else ctx.lineTo(x,farBank(x)); } ctx.stroke();
  // Each firefly wanders independently and flashes briefly, then goes fully dark.
  for (let i = 0; i < 22; i++) {
   const period = 2.3 + random(i + 8600) * 3.3;
