@@ -352,7 +352,7 @@ body[data-time=night] .capuchin-tail { animation:none; }
 .jungle-cloud:nth-child(even) { opacity:.3; }
 body[data-weather=cloudy] .jungle-night-sky i { filter:brightness(.2); }
 body[data-weather=rainy] .jungle-night-sky i { visibility:hidden; }
-.css-crown::after { content:'';position:absolute;inset:9% 18% 47% 13%;border-radius:48% 52% 37% 63%;background:#e0e5b0;opacity:calc(var(--jungle-sun,0)*.035 + var(--moon,0)*.055);pointer-events:none; }
+.css-crown::after { content:none; }
 body[data-time=night][data-weather=cloudy] .forest-depth.middle,body[data-time=night][data-weather=rainy] .forest-depth.middle { filter:brightness(.34) saturate(.8); }
 body[data-time=night][data-weather=cloudy] .forest-depth.far,body[data-time=night][data-weather=rainy] .forest-depth.far { filter:brightness(.37) saturate(.7) blur(.8px); }
 .trunk-epiphyte { position:absolute;left:49%;bottom:var(--plant-bottom);width:14px;height:22px;z-index:2; }

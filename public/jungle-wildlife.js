@@ -224,9 +224,8 @@ export function addCaimans(parent) {
    <ellipse class="caiman-eye-open" cx="129" cy="17.6" rx=".65" ry="1.6" fill="#243d2c"/>
    <path class="caiman-eye-closed" d="M126 18 Q129 20 132 18" fill="none" stroke="#2c4532" stroke-width="1.3"/>
    </g>
-   <path d="M55 18 L61 14 L66 17 L73 13 L78 16 L85 13 L90 16 L97 14 L102 18 L110 18" fill="#444d36"/>
-   <path d="M64 22 L103 22 M63 27 L101 27" stroke="#89906a" stroke-width=".8" stroke-dasharray="2 4"/>
-   <path d="M30 27 L33 32 M41 19 L45 27 M51 17 L54 23" stroke="#3f4935" stroke-width="1.5"/>
+   <path d="M55 18 Q60 14 66 17 L74 15 L81 17 L89 15 L99 18 L110 18" fill="#4b553e"/>
+   <path d="M32 27 L35 31 M47 19 L50 24" stroke="#3f4935" stroke-width="1" opacity=".55"/>
   </svg>`;
   parent.append(caiman);
   caiman.removeAttribute('aria-hidden');
@@ -283,18 +282,15 @@ export function addCapybaras(parent) {
    </g>
    <g class="capy-sitting-feet" fill="#99876a">
     <path d="M39 48 L43 49 L41 65 L45 68 L44 70 L35 70 L35 66Z M78 55 Q93 54 96 63 L92 68 L79 69 L75 65Z"/>
-    <path d="M37 68 L38 70 M40 68 L41 70 M83 67 L84 69 M87 66 L88 68" stroke="#625b46" stroke-width=".8"/>
    </g>
    <g class="capy-head">
     <path d="M12 26 Q16 23 24 23 Q31 19 38 20 Q46 21 47 30 L46 38 Q42 44 32 43 L15 41 Q9 40 9 35 L9 30 Q9 27 12 26Z" fill="${member.baby ? '#b8a583' : '#a59172'}"/>
     <ellipse class="capy-ear" cx="39" cy="18" rx="2.5" ry="3" fill="#806b50"/>
     <ellipse cx="39" cy="18" rx="1.1" ry="1.7" fill="#b09a7c"/>
     <path d="M11 30 l1.5 -.4 M12 37 Q16 38 20 37.5" stroke="#716249" stroke-width=".8" stroke-linecap="round" fill="none"/>
-    <path d="M34 38 Q40 39 43 35 M21 28 l2 -1 M24 30 l2 -1" stroke="#c0ac88" stroke-width=".65" opacity=".45" fill="none"/>
     <path class="capy-eye-open" d="M28.5 26 Q30 25.5 31.5 26 Q30 28 28.5 26Z" fill="#433c2d"/>
     <path class="capy-eye-closed" d="M28 25 Q30 27 32 25" stroke="#57452f" stroke-width="1.1" fill="none"/>
    </g>
-   <path d="M48 27 L47 31 M54 23 L53 27 M62 25 L61 29 M72 23 L71 28 M83 25 L82 30 M93 29 L92 34 M59 43 L58 47 M76 45 L75 49" stroke="#b0a080" stroke-width=".8" opacity=".65"/>
   </svg>`;
   parent.append(capy);
   if(member.baby) {
