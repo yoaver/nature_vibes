@@ -46,6 +46,10 @@ try {
     await delay(100);
   }
   await delay(800);
+  if(process.argv.includes('--beach')) {
+    await call('Runtime.evaluate',{expression:"document.querySelector('[data-environment=beach]').click()"});
+    await delay(300);
+  }
   if (process.argv.includes('--rainy')) {
     await call('Runtime.evaluate', { expression: "document.querySelector('[data-weather=rainy]').click()" });
     await delay(3000);
@@ -268,7 +272,7 @@ try {
     if (!hidden.result.value) throw Error('Animal eyes remained visible during day');
     console.log('Armadillo outing, pause/resume, return, restored eyes, and daytime hiding passed.');
   }
-  if (process.argv.includes('--rainy')) {
+  if (process.argv.includes('--rainy')&&!process.argv.includes('--beach')) {
     await call('Runtime.evaluate', { expression: "import('/jungle.js').then(({jungleRiverTop})=>{window.splashChecks=[];window.originalEllipse=CanvasRenderingContext2D.prototype.ellipse;CanvasRenderingContext2D.prototype.ellipse=function(x,y,rx,ry,...rest){window.splashChecks.push(y-ry >= jungleRiverTop(x,innerWidth,innerHeight));return window.originalEllipse.call(this,x,y,rx,ry,...rest)}})",awaitPromise:true });
     await delay(500);
     const splashes = await call('Runtime.evaluate', { expression: "CanvasRenderingContext2D.prototype.ellipse=window.originalEllipse; window.splashChecks.length>0 && window.splashChecks.every(Boolean)", returnByValue: true });
