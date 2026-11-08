@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { animalReview, maleSeaLionReview } from './animal-review.mjs';
 
 const screenshotDir=resolve('screenshots');
 await mkdir(screenshotDir,{recursive:true});
@@ -30,7 +31,7 @@ try {
   const errors = [];
   socket.addEventListener('message', event => {
     const message = JSON.parse(event.data);
-    if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.text);
+    if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.exception?.description||message.params.exceptionDetails.text);
     if (message.id && pending.has(message.id)) {
       const { resolve, reject } = pending.get(message.id); pending.delete(message.id);
       if (message.error) reject(Error(message.error.message)); else resolve(message.result);
@@ -46,8 +47,8 @@ try {
     await delay(100);
   }
   await delay(800);
-  if(process.argv.includes('--beach')) {
-    await call('Runtime.evaluate',{expression:"document.querySelector('[data-environment=beach]').click()"});
+  if(process.argv.includes('--bay')) {
+    await call('Runtime.evaluate',{expression:"document.querySelector('[data-environment=bay]').click()"});
     await delay(300);
   }
   if (process.argv.includes('--rainy')) {
@@ -178,16 +179,26 @@ try {
     if(!await evaluate("!!document.querySelector('.water-caiman-bank.annoyed')"))throw Error('Sleeping day caiman did not wake');
     await finish('.water-caiman-bank.annoyed');
     console.log('Both armadillos, baby capybara play, and daytime/nighttime caiman waking passed.');
-    await evaluate("import('/jungle-birds.js').then(m=>{m.beginButterflyLanding();return true})");await delay(80);
-    await evaluate("import('/jungle-birds.js').then(m=>{m.beginButterflyLanding();return true})");await delay(80);
+    if(await evaluate("document.querySelectorAll('.toucan-roost[data-active=true]').length")!==3)throw Error('Expected three solitary toucans');
+    for(const id of [0,1,2]) {
+      for(let trip=0;trip<2;trip++) {
+        await click(`.toucan-roost[data-toucan="${id}"][data-active=true]`);await delay(80);
+        if(await evaluate(`document.querySelectorAll('.flying-toucan[data-toucan="${id}"]').length`)!==1)throw Error('Toucan click did not start its solitary flight');
+        await finish(`.flying-toucan[data-toucan="${id}"]`);
+        if(!await evaluate(`document.querySelectorAll('.toucan-roost[data-toucan="${id}"]')[${trip===0?0:1}].dataset.active==='true'`))throw Error('Toucan did not reach its branch');
+      }
+    }
+    console.log('All three solitary toucans passed real-click round trips.');
+    await evaluate("import('/assets/scenes/jungle/jungle-birds.js').then(m=>{m.beginButterflyLanding();return true})");await delay(80);
+    await evaluate("import('/assets/scenes/jungle/jungle-birds.js').then(m=>{m.beginButterflyLanding();return true})");await delay(80);
     await finish('.morpho-butterfly[data-landing-state=approaching]');
     if(!await evaluate("document.querySelectorAll('.morpho-butterfly.landed').length===2 && new Set([...document.querySelectorAll('.morpho-butterfly.landed')].map(e=>e.dataset.landingOn)).size===2"))throw Error('Butterflies did not land on both animal types');
     await finish('.morpho-butterfly[data-landing-state=landed]');
     await finish('.morpho-butterfly[data-landing-state=departing]');
     if(await evaluate("document.querySelectorAll('.morpho-butterfly.landing').length")!==0)throw Error('Butterflies did not resume flight');
-    const monkeys=await evaluate("import('/jungle-monkeys.js').then(m=>{const troops=[...document.querySelectorAll('.capuchin-colony')],nodes=[...document.querySelectorAll('.capuchin-monkey')];m.updateSquirrelMonkeys(0,0);const before=nodes.map(e=>e.style.left+e.style.top);m.updateSquirrelMonkeys(38,0);return nodes.length===17&&troops.some(e=>e.querySelectorAll('.capuchin-monkey').length===7)&&troops.some(e=>e.querySelectorAll('.capuchin-monkey').length===10)&&nodes.some((e,i)=>e.style.left+e.style.top!==before[i])})");
+    const monkeys=await evaluate("import('/assets/scenes/jungle/jungle-monkeys.js').then(m=>{const troops=[...document.querySelectorAll('.capuchin-colony')],nodes=[...document.querySelectorAll('.capuchin-monkey')];m.updateSquirrelMonkeys(0,0);const before=nodes.map(e=>e.style.left+e.style.top);m.updateSquirrelMonkeys(38,0);return nodes.length===17&&troops.some(e=>e.querySelectorAll('.capuchin-monkey').length===7)&&troops.some(e=>e.querySelectorAll('.capuchin-monkey').length===10)&&nodes.some((e,i)=>e.style.left+e.style.top!==before[i])})");
     if(!monkeys)throw Error('Monkey count or rotation failed');
-    const capyStates=await evaluate("import('/jungle-wildlife.js').then(m=>{const nodes=[...document.querySelectorAll('.river-capybara')],states=nodes.map(()=>new Set());for(let t=0;t<230;t+=3){m.updateGrazingCapybaras(t);nodes.forEach((n,i)=>states[i].add(['grazing','sitting','resting','standing'].find(c=>n.classList.contains(c))))}return states.every(s=>s.size===4)})");
+    const capyStates=await evaluate("import('/assets/scenes/jungle/jungle-wildlife.js').then(m=>{const nodes=[...document.querySelectorAll('.river-capybara')],states=nodes.map(()=>new Set());for(let t=0;t<230;t+=3){m.updateGrazingCapybaras(t);nodes.forEach((n,i)=>states[i].add(['grazing','sitting','resting','standing'].find(c=>n.classList.contains(c))))}return states.every(s=>s.size===4)})");
     if(!capyStates)throw Error('Capybara daytime routines failed');
     await evaluate("document.querySelector('[data-mode=night]').click()");await delay(1500);
     if(!await evaluate("[...document.querySelectorAll('.capuchin-monkey')].every(e=>getComputedStyle(e.querySelector('.squirrel-awake')).display==='none'&&getComputedStyle(e.querySelector('.squirrel-asleep')).display!=='none')"))throw Error('Monkeys did not lie down to sleep');
@@ -201,15 +212,28 @@ try {
     const saved=await evaluate('({time:document.body.dataset.time,weather:document.body.dataset.weather})');
     await evaluate("document.querySelector('[data-mode=day]').click();document.querySelector('[data-weather=rainy]').click()");await delay(350);
     if(!await evaluate("document.querySelectorAll('.morpho-butterfly.weather-settled').length===7&&[...document.querySelectorAll('.capuchin-monkey')].every(e=>e.dataset.pose==='crouch')&&[...document.querySelectorAll('.ambient-macaw,.ambient-bat')].every(e=>getComputedStyle(e).opacity==='0')"))throw Error('Rain sheltering failed');
-    await evaluate("import('/jungle-birds.js').then(m=>m.beginButterflyLanding())");
+    await evaluate("import('/assets/scenes/jungle/jungle-birds.js').then(m=>m.beginButterflyLanding())");
     if(await evaluate("document.querySelectorAll('.morpho-butterfly.landing').length"))throw Error('Butterfly took off during rain');
     await evaluate("document.querySelector('[data-mode=night]').click();document.querySelector('[data-weather=cloudy]').click()");await delay(2300);
     if(!await evaluate("Number(getComputedStyle(document.querySelector('#jungle-backdrop')).getPropertyValue('--moon'))<.001"))throw Error('Cloudy night has direct moonlight');
     await evaluate("document.querySelector('[data-mode=day]').click();document.querySelector('[data-weather=clear]').click()");await delay(250);
     if(!await evaluate("document.querySelectorAll('.weather-settled').length===0&&document.querySelectorAll('.forest-depth.middle .morpho-butterfly').length===2&&document.querySelectorAll('.forest-depth.far .morpho-butterfly').length===1"))throw Error('Butterflies lost their depth layers after rain');
-    if(!await evaluate("import('/jungle-birds.js').then(m=>{const birds=[...document.querySelectorAll('.perched-macaw')];m.updatePerchedMacaws(0);const before=birds.map(b=>b.dataset.posture);m.updatePerchedMacaws(81);return birds.some((b,i)=>b.dataset.posture!==before[i])})"))throw Error('Perched macaws never change posture');
+    if(!await evaluate("import('/assets/scenes/jungle/jungle-birds.js').then(m=>{const birds=[...document.querySelectorAll('.perched-macaw')];m.updatePerchedMacaws(0);const before=birds.map(b=>b.dataset.posture);m.updatePerchedMacaws(81);return birds.some((b,i)=>b.dataset.posture!==before[i])})"))throw Error('Perched macaws never change posture');
     await evaluate(`document.querySelector('[data-mode=${saved.time}]').click();document.querySelector('[data-weather=${saved.weather}]').click()`);await delay(2300);
     console.log('Rain sheltering, cloudy moonlight, butterfly depth restoration, and perched macaw posture changes passed.');
+  }
+  if(process.argv.includes('--autonomy')) {
+    const evaluate=async expression=>(await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})).result.value;
+    const saved=await evaluate('({time:document.body.dataset.time,weather:document.body.dataset.weather})');
+    for(const [mode,module,reset,update,pause,flyer] of [['day','jungle-birds','resetDayWildlife','updateAutomaticMacaws','pauseDayWildlife','flying-macaw'],['night','jungle-wildlife','resetBats','updateAutomaticBats','pauseBats','flying-fox']]) {
+      await evaluate(`document.querySelector('[data-mode=${mode}]').click();document.querySelector('[data-weather=clear]').click()`);
+      const result=await evaluate(`import('/assets/scenes/jungle/${module}.js').then(m=>{m.${reset}();m.${update}(0);m.${pause}(true);m.${update}(200);const held=document.querySelectorAll('.${flyer}').length===0;m.${pause}(false);m.${update}(200);m.${update}(201);const groups=new Set([...document.querySelectorAll('.${flyer}')].map(e=>e.dataset.group));m.${reset}();return held&&groups.size===1})`);
+      if(!result)throw Error(mode+' automatic flocks were not staggered or pause-aware');
+      await evaluate(`document.querySelector('[data-weather=rainy]').click()`);
+      if(!await evaluate(`import('/assets/scenes/jungle/${module}.js').then(m=>{m.${reset}();m.${update}(0);m.${update}(200);const quiet=document.querySelectorAll('.${flyer}').length===0;m.${reset}();return quiet})`))throw Error('Automatic flock departed in rain');
+    }
+    await evaluate(`document.querySelector('[data-mode=${saved.time}]').click();document.querySelector('[data-weather=${saved.weather}]').click()`);await delay(1800);
+    console.log('Macaw and bat automatic departures are staggered, pause-aware, and quiet in rain.');
   }
   if(process.argv.includes('--roost-layout')) {
     const layout=await call('Runtime.evaluate',{expression:"[...document.querySelectorAll('.macaw-roost')].map(b=>{const r=b.getBoundingClientRect(),c=b.parentElement.getBoundingClientRect();return{group:b.dataset.group,active:b.dataset.macawActive,rect:{x:r.x,y:r.y,w:r.width,h:r.height},crown:{x:c.x,y:c.y,w:c.width,h:c.height}}})",returnByValue:true});
@@ -219,8 +243,33 @@ try {
     await call('Runtime.evaluate',{expression:"document.querySelector('.macaw-roost[data-group=\"1\"][data-macaw-active=true]').click()"});await delay(100);
     await call('Runtime.evaluate',{expression:"document.querySelectorAll('.flying-macaw[data-group=\"1\"]').forEach(b=>b.getAnimations().forEach(a=>a.finish()))"});await delay(150);
   }
+  if(process.argv.includes('--left-armadillo')) {
+    const outing=await call('Runtime.evaluate',{expression:"(()=>{document.querySelector('.hidden-animal[data-animal=\"1\"]').click();const e=document.querySelector('.armadillo-track[data-animal=\"1\"]'),a=e.getAnimations().find(a=>a.animationName==='armadillo-explore');if(!a)return false;a.currentTime=Number(a.effect.getTiming().duration)*.52;document.querySelector('#pause').click();return Math.abs(new DOMMatrix(getComputedStyle(e).transform).m41)>70})()",returnByValue:true});
+    if(!outing.result.value)throw Error('Left armadillo did not reach its extended route');
+  }
+  if(process.argv.includes('--ambient-toucan')) {
+    const result=await call('Runtime.evaluate',{expression:`import('/assets/scenes/jungle/jungle-toucans.js').then(m=>{document.querySelector('#pause').click();m.pauseToucans(false);m.updatePerchedToucans(51);const bird=document.querySelector('.ambient-toucan');const visible=!bird.hidden&&!!bird.closest('.forest-depth.middle');m.updatePerchedToucans(70);const quiet=bird.hidden;m.updatePerchedToucans(51);m.pauseToucans(true);return visible&&quiet})`,returnByValue:true});
+    if(!result.result.value)throw Error('Background toucan crossing or quiet interval failed');
+  }
+  if(process.argv.includes('--sea-lion-gaits')) {
+    await call('Runtime.evaluate',{expression:`import('/assets/scenes/bay/wildlife.js').then(({drawWalkingSeaLion})=>{const c=document.createElement('canvas');c.width=1200;c.height=680;c.style.cssText='position:fixed;left:100px;top:80px;width:1200px;height:680px;z-index:30';document.body.append(c);const ctx=c.getContext('2d');ctx.fillStyle='#c3c6b6';ctx.fillRect(0,0,c.width,c.height);['shuffle','low-pull','amble','bound'].forEach((style,row)=>{ctx.fillStyle='#263b37';ctx.font='18px sans-serif';ctx.fillText(style,20,42+row*160);for(let col=0;col<5;col++){ctx.save();ctx.translate(190+col*205,132+row*160);ctx.strokeStyle='#a1a998';ctx.beginPath();ctx.moveTo(-100,20);ctx.lineTo(110,20);ctx.stroke();ctx.scale(2.7,2.7);drawWalkingSeaLion(ctx,{style,phase:col/5,coat:'#79684c'});ctx.restore();}})})`,awaitPromise:true});
+  }
+  if(process.argv.includes('--animal-review')||process.argv.includes('--animal-silhouettes'))await call('Runtime.evaluate',{expression:`(${animalReview.toString()})({silhouette:${process.argv.includes('--animal-silhouettes')}})`,awaitPromise:true});
+  if(process.argv.includes('--male-sea-lion-poses'))await call('Runtime.evaluate',{expression:`(${maleSeaLionReview.toString()})()`,awaitPromise:true});
   const frame = await call('Page.captureScreenshot', { format: 'png' });
   await writeFile(output, Buffer.from(frame.data, 'base64'));
+  if(process.argv.includes('--bay-motion')) {
+    for(const [label,wait] of [['breach',850],['entry',950]]) {
+      await delay(wait);
+      const action=await call('Page.captureScreenshot',{format:'png'});
+      await writeFile(output.replace(/\.png$/,`-${label}.png`),Buffer.from(action.data,'base64'));
+    }
+  }
+  if(process.argv.includes('--toucan-detail')) {
+    const bounds=await call('Runtime.evaluate',{expression:"(()=>{const r=document.querySelector('.toucan-roost[data-active=true]').getBoundingClientRect();return{x:r.x-8,y:r.y-8,width:r.width+16,height:r.height+16,scale:4}})()",returnByValue:true});
+    const close=await call('Page.captureScreenshot',{format:'png',clip:bounds.result.value});
+    await writeFile(output.replace(/\.png$/,'-detail.png'),Buffer.from(close.data,'base64'));
+  }
   if(process.argv.includes('--macaws')) {
     await call('Runtime.evaluate',{expression:"document.querySelector('#pause').click()"});
     const paused=await call('Runtime.evaluate',{expression:"[...document.querySelectorAll('.flying-macaw')].every(bird=>bird.getAnimations().every(a=>a.playState==='paused'))",returnByValue:true});
@@ -272,8 +321,8 @@ try {
     if (!hidden.result.value) throw Error('Animal eyes remained visible during day');
     console.log('Armadillo outing, pause/resume, return, restored eyes, and daytime hiding passed.');
   }
-  if (process.argv.includes('--rainy')&&!process.argv.includes('--beach')) {
-    await call('Runtime.evaluate', { expression: "import('/jungle.js').then(({jungleRiverTop})=>{window.splashChecks=[];window.originalEllipse=CanvasRenderingContext2D.prototype.ellipse;CanvasRenderingContext2D.prototype.ellipse=function(x,y,rx,ry,...rest){window.splashChecks.push(y-ry >= jungleRiverTop(x,innerWidth,innerHeight));return window.originalEllipse.call(this,x,y,rx,ry,...rest)}})",awaitPromise:true });
+  if (process.argv.includes('--rainy')&&!process.argv.includes('--bay')) {
+    await call('Runtime.evaluate', { expression: "import('/assets/scenes/jungle/jungle.js').then(({jungleRiverTop})=>{window.splashChecks=[];window.originalEllipse=CanvasRenderingContext2D.prototype.ellipse;CanvasRenderingContext2D.prototype.ellipse=function(x,y,rx,ry,...rest){window.splashChecks.push(y-ry >= jungleRiverTop(x,innerWidth,innerHeight));return window.originalEllipse.call(this,x,y,rx,ry,...rest)}})",awaitPromise:true });
     await delay(500);
     const splashes = await call('Runtime.evaluate', { expression: "CanvasRenderingContext2D.prototype.ellipse=window.originalEllipse; window.splashChecks.length>0 && window.splashChecks.every(Boolean)", returnByValue: true });
     if (!splashes.result.value) throw Error('Rain splash escaped the river boundary');

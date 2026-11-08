@@ -1,13 +1,15 @@
-import { drawJungle, jungleRiverTop, resetJungleAnimal, setJunglePaused } from './jungle.js';
+import { drawJungle, jungleRiverTop, resetJungleAnimal, setJunglePaused } from '../scenes/jungle/jungle.js';
+import { drawBay } from '../scenes/bay/scene.js';
 
-let environment = 'beach';
-try { if (localStorage.getItem('nature-vibes-environment') === 'jungle') environment = 'jungle'; } catch {}
-if (new URLSearchParams(location.search).get('environment') === 'jungle') environment = 'jungle';
+let environment = 'bay';
+try { const saved=localStorage.getItem('nature-vibes-environment');if(['jungle','bay'].includes(saved))environment=saved; } catch {}
+const requestedEnvironment=new URLSearchParams(location.search).get('environment');
+if(['bay','jungle'].includes(requestedEnvironment))environment=requestedEnvironment;
 
 // Change these palettes to give the beach a new look.
 const scenes = {
- day: {sky:['#559cab','#b7d8cf','#f7e4bb'],sea:['#4b9eab','#338e9b','#78b6b2'],sand:['#d4bd96','#efe0bd'],name:'The quiet coast',detail:'DAYLIGHT · ENDLESS SUMMER'},
- night: {sky:['#08152e','#183653','#647385'],sea:['#28475f','#1a4256','#406575'],sand:['#687879','#89948c'],name:'Under the same moon',detail:'MOONLIGHT · A QUIETER WORLD'}
+ day: {sky:['#559cab','#b7d8cf','#f7e4bb'],sea:['#4b9eab','#338e9b','#78b6b2'],sand:['#d4bd96','#efe0bd'],name:'The quiet coast',detail:'DAYLIGHT Â· ENDLESS SUMMER'},
+ night: {sky:['#08152e','#183653','#647385'],sea:['#28475f','#1a4256','#406575'],sand:['#687879','#89948c'],name:'Under the same moon',detail:'MOONLIGHT Â· A QUIETER WORLD'}
 };
 const canvas=document.querySelector('#scene'),ctx=canvas.getContext('2d');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -28,83 +30,6 @@ cloudCover = weatherPresets[weather].cloud;
 rainfall = weatherPresets[weather].rain;
 
 // All landscape and weather details are procedural canvas shapes.
-function drawIslands(horizon) {
- const contours=[
-  [[0,0],[.1,-.12],[.22,-.62],[.31,-.76],[.4,-.6],[.49,-.81],[.61,-.57],[.72,-.2],[.86,-.07],[1,0]],
-  [[0,0],[.14,-.12],[.29,-.48],[.38,-.61],[.49,-.52],[.6,-.64],[.73,-.29],[.88,-.12],[1,0]],
-  [[0,0],[.12,-.2],[.23,-.62],[.34,-.73],[.43,-.64],[.54,-.96],[.65,-.86],[.75,-.41],[.87,-.21],[1,0]],
- ];
- const islands = [
-  { x: .06, width: .25, height: .045, tint: ['#719a99', '#263e54'] },
-  { x: .36, width: .17, height: .028, tint: ['#83a6a2', '#31495d'] },
-  { x: .79, width: .25, height: .065, tint: ['#547e7d', '#1b3348'] },
- ];
- for (const [i, island] of islands.entries()) {
-  const x = island.x * w, span = island.width * w, height = island.height * h;
-  ctx.beginPath(); ctx.moveTo(x, horizon + 2);
-  const points=contours[i];
-  for(let j=1;j<points.length-1;j++) {
-   const a=points[j],b=points[j+1];
-   ctx.quadraticCurveTo(x+a[0]*span,horizon+a[1]*height,x+(a[0]+b[0])*.5*span,horizon+(a[1]+b[1])*.5*height);
-  }
-  ctx.lineTo(x+span,horizon+2);
-  ctx.closePath(); ctx.fillStyle = mix(...island.tint); ctx.fill();
-  ctx.fillStyle = `rgba(195,219,213,${.08 * (1 - night)})`;
-  ctx.fillRect(x + span * .1, horizon + 3 + i, span * .8, 1);
- }
-}
-function drawLighthouse() {
- // Mid-distance: the rock sits below the island horizon, with open water to shore.
- const scale = Math.min(h * .16, w * .25) / 105;
- const x = w * .82, base = h * .60;
- const rockWidth = Math.min(w * .09, h * .07);
- const rockHeight = h * .024;
- ctx.save(); ctx.translate(x, base);
- ctx.fillStyle = mix('#74877a','#36505b');
- ctx.beginPath(); ctx.moveTo(-rockWidth, rockHeight * .9);
- ctx.bezierCurveTo(-rockWidth*.92,rockHeight*.57,-rockWidth*.73,rockHeight*.63,-rockWidth*.61,rockHeight*.2);
- ctx.quadraticCurveTo(-rockWidth*.48,-rockHeight*.16,-rockWidth*.22,-rockHeight*.15);
- ctx.quadraticCurveTo(rockWidth*.12,-rockHeight*.27,rockWidth*.34,0);
- ctx.bezierCurveTo(rockWidth*.5,rockHeight*.18,rockWidth*.7,rockHeight*.12,rockWidth*.77,rockHeight*.48);
- ctx.quadraticCurveTo(rockWidth*.88,rockHeight*.79,rockWidth,rockHeight);
- ctx.bezierCurveTo(rockWidth*.57,rockHeight*1.16,-rockWidth*.54,rockHeight*1.22,-rockWidth,rockHeight*.9);
- ctx.closePath(); ctx.fill();
- ctx.fillStyle=mix('#5b736b','#293f4d');
- ctx.beginPath();ctx.moveTo(-rockWidth*.22,rockHeight*.3);
- ctx.quadraticCurveTo(rockWidth*.42,rockHeight*.47,rockWidth*.77,rockHeight*.48);
- ctx.quadraticCurveTo(rockWidth*.88,rockHeight*.79,rockWidth,rockHeight);
- ctx.quadraticCurveTo(rockWidth*.34,rockHeight*1.14,-rockWidth*.36,rockHeight*.97);
- ctx.closePath();ctx.fill();
- // Short, quiet foam at the waterline anchors the outcrop in the sea.
- ctx.strokeStyle = `rgba(224,241,230,${.25 - night * .1})`;
- ctx.lineWidth = 1;
- ctx.beginPath(); ctx.ellipse(0, rockHeight * 1.05, rockWidth * 1.08, rockHeight * .2, 0, 0, Math.PI); ctx.stroke();
- ctx.restore();
- ctx.save(); ctx.translate(x, base); ctx.scale(scale, scale);
- // Stone base and tapered ivory tower.
- ctx.fillStyle = mix('#526c65', '#142b3b');
- ctx.beginPath(); ctx.ellipse(0, 2, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
- ctx.fillStyle = mix('#eee2c6','#92a4a1');
- ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(-8, -78); ctx.lineTo(8, -78); ctx.lineTo(13, 0); ctx.closePath(); ctx.fill();
- ctx.fillStyle=mix('#d5cfb9','#6c8383');
- ctx.beginPath();ctx.moveTo(3,-78);ctx.lineTo(8,-78);ctx.lineTo(13,0);ctx.lineTo(5,0);ctx.closePath();ctx.fill();
- ctx.fillStyle = mix('#b96953', '#644954');
- ctx.beginPath(); ctx.moveTo(-10, -54); ctx.lineTo(10, -54); ctx.lineTo(11, -40); ctx.lineTo(-11, -40); ctx.closePath(); ctx.fill();
- ctx.fillStyle = '#273e49'; ctx.fillRect(-2, -66, 4, 7); ctx.fillRect(-3, -15, 6, 15);
- const beamStrength = night * (.8 + cloudCover * .15);
- const sweep = Math.sin(time * .35);
- const reach = 260 * sweep;
- const beam = ctx.createLinearGradient(0, -88, reach || 1, -88);
- beam.addColorStop(0, `rgba(255,239,180,${beamStrength * .35})`);
- beam.addColorStop(1, 'rgba(255,239,180,0)');
- ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(0, -88); ctx.lineTo(reach, -112); ctx.lineTo(reach, -61); ctx.closePath(); ctx.fill();
- ctx.fillStyle = '#30434b'; ctx.fillRect(-13, -80, 26, 3);
- ctx.fillStyle = mix('#91b4be', '#ffe4a0'); ctx.shadowColor = '#ffe5a6'; ctx.shadowBlur = night * 20; ctx.fillRect(-7, -94, 14, 13); ctx.shadowBlur = 0;
- ctx.strokeStyle = '#30434b'; ctx.lineWidth = 2;
- ctx.strokeRect(-9, -95, 18, 15); ctx.beginPath(); ctx.moveTo(0, -95); ctx.lineTo(0, -80); ctx.stroke();
- ctx.fillStyle = mix('#a65342', '#493846'); ctx.beginPath(); ctx.moveTo(-13, -95); ctx.lineTo(0, -105); ctx.lineTo(13, -95); ctx.closePath(); ctx.fill();
- ctx.restore();
-}
 function drawSailboats(horizon) {
  const boats = [
   { x: .18, depth: .075, size: .037, speed: .0018, direction: 1 },
@@ -233,42 +158,7 @@ function render(){
  ctx.beginPath();ctx.arc(ox,oy,radius,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
  drawWeatherClouds();
  drawBirds();
- ctx.fillStyle=gradient(horizon,h,[color('sea',0),color('sea',1),color('sea',2)]);ctx.fillRect(0,horizon,w,h-horizon);
- drawIslands(horizon);
- for(let i=0;i<260;i++){
-  const depth=(i+1)/261,y=horizon+depth*depth*h*.43,x=random(i+600)*w+Math.sin(time*.2+i)*12*depth;
-  ctx.strokeStyle=`rgba(220,245,234,${(.07+random(i+800)*.15)*(1-night*.45)})`;ctx.lineWidth=.5+depth;
-  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+2+depth*depth*w*.12*random(i+700),y);ctx.stroke();
- }
- for(let i=0;i<100;i++){
-  const depth=i/100,y=horizon+depth*h*.33,x=ox+(random(i+1000)-.5)*(20+depth*w*.25);
-  ctx.fillStyle=`rgba(255,239,195,${(.08+.17*random(i+1100))*(1-depth)*(1-cloudCover*.85)})`;ctx.fillRect(x,y,2+random(i+1200)*(8+depth*35),1+depth);
- }
- drawSailboats(horizon);
- // Render every water effect before any foreground land or lighthouse geometry.
- const shore = x => h * (.82 + .075 * Math.sin(x / w * 2.8 + .3)) + Math.sin(x / w * 7) * h * .006;
- for(let layer=0;layer<5;layer++){
-  const phase=(time*.035+layer/5)%1,offset=(1-phase)*h*.23,alpha=Math.sin(phase*Math.PI)*(1-night*.4);
-  const waveY=x=>shore(x)-offset+Math.sin(x*.012+time*.3+layer)*(2+phase*4)*(.75+.25*Math.sin(x/w*9+layer));
-  ctx.beginPath();
-  for(let x=0;x<=w+6;x+=6){if(x===0)ctx.moveTo(x,waveY(x));else ctx.lineTo(x,waveY(x));}
-  ctx.strokeStyle=`rgba(227,249,237,${alpha*.18})`;ctx.lineWidth=10*phase+2;ctx.stroke();
-  ctx.beginPath();let drawing=false;
-  for(let x=0;x<=w+6;x+=6){
-   const crest=Math.sin(x/w*19+layer*2.7)+.4*Math.sin(x/w*47-layer)>-.6;
-   if(crest&&drawing)ctx.lineTo(x,waveY(x));else ctx.moveTo(x,waveY(x));drawing=crest;
-  }
-  ctx.lineCap='round';ctx.strokeStyle=`rgba(244,253,239,${alpha*.48})`;ctx.lineWidth=1+phase*1.6;ctx.stroke();ctx.lineCap='butt';
- }
- // Foreground beach stays separate from the offshore lighthouse.
- ctx.beginPath();ctx.moveTo(0,h);for(let x=0;x<=w+8;x+=8)ctx.lineTo(x,shore(x));ctx.lineTo(w,h);ctx.closePath();
- ctx.fillStyle=gradient(h*.78,h,[color('sand',0),color('sand',1)]);ctx.fill();
- for(let i=0;i<550;i++){
-  const x=random(i+1500)*w,y=h*(.82+random(i+2100)*.18);if(y<shore(x)+14)continue;
-  ctx.fillStyle=`rgba(92,77,53,${.04+random(i+2700)*.07})`;ctx.fillRect(x,y,1,1);
- }
- drawLighthouse();
- drawRain(horizon);
+ drawBay(ctx,{w,h,time,night,mix,color,gradient,random,horizon,cloudCover,drawSailboats,drawRain});
 }
 function updateDescription() {
  if (environment === 'jungle') {
@@ -278,7 +168,7 @@ function updateDescription() {
  canvas.setAttribute('aria-label', `${mode === 'day' ? 'Sunlit' : 'Moonlit'} beach, sailboats, seabirds, distant islands and a lighthouse on a nearby offshore outcrop, with ${weather} weather`);
 }
 function setEnvironment(next) {
- if (!['beach', 'jungle'].includes(next)) return;
+ if (!['bay', 'jungle'].includes(next)) return;
  environment = next;
  if (next !== 'jungle') resetJungleAnimal();
  document.body.dataset.environment = next;
@@ -312,7 +202,7 @@ function setMode(next){
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
 const pauseButton=document.querySelector('#pause');
-function updatePause(){pauseButton.textContent=paused?'▷':'Ⅱ';pauseButton.title=paused?'Resume animation':'Pause animation';pauseButton.setAttribute('aria-label',pauseButton.title);document.body.classList.toggle('paused', paused);setJunglePaused(paused);}
+function updatePause(){pauseButton.textContent=paused?'\u25b7':'\u2161';pauseButton.title=paused?'Resume animation':'Pause animation';pauseButton.setAttribute('aria-label',pauseButton.title);document.body.classList.toggle('paused', paused);setJunglePaused(paused);}
 pauseButton.addEventListener('click',()=>{paused=!paused;updatePause();});
 reduced.addEventListener('change',()=>{paused=reduced.matches;updatePause();});
 addEventListener('resize',resize);

@@ -16,14 +16,17 @@ setInterval(() => {
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
-  ['/style.css', ['style.css', 'text/css; charset=utf-8']],
-  ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
-  ['/jungle.js', ['jungle.js', 'text/javascript; charset=utf-8']],
-  ['/jungle-wildlife.js', ['jungle-wildlife.js', 'text/javascript; charset=utf-8']],
-  ['/bat-models.js', ['bat-models.js', 'text/javascript; charset=utf-8']],
-  ['/jungle-birds.js', ['jungle-birds.js', 'text/javascript; charset=utf-8']],
-  ['/jungle-monkeys.js', ['jungle-monkeys.js', 'text/javascript; charset=utf-8']],
-  ['/jungle.css', ['jungle.css', 'text/css; charset=utf-8']],
+  ['/assets/shared/style.css', ['assets/shared/style.css', 'text/css; charset=utf-8']],
+  ['/assets/shared/app.js', ['assets/shared/app.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/bay/wildlife.js', ['assets/scenes/bay/wildlife.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/bay/scene.js', ['assets/scenes/bay/scene.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle.js', ['assets/scenes/jungle/jungle.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle.css', ['assets/scenes/jungle/jungle.css', 'text/css; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle-wildlife.js', ['assets/scenes/jungle/jungle-wildlife.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle-birds.js', ['assets/scenes/jungle/jungle-birds.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle-monkeys.js', ['assets/scenes/jungle/jungle-monkeys.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/jungle-toucans.js', ['assets/scenes/jungle/jungle-toucans.js', 'text/javascript; charset=utf-8']],
+  ['/assets/scenes/jungle/bat-models.js', ['assets/scenes/jungle/bat-models.js', 'text/javascript; charset=utf-8']],
 ]);
 const port = Number(process.env.PORT || 3000);
 http.createServer(async (req, res) => {

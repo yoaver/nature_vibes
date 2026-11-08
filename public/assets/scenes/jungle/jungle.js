@@ -1,6 +1,7 @@
-import { addBatRoost, resetBats, pauseBats, addCaimans, addCapybaras, resetBankReactions, addAmbientBats, updateGrazingCapybaras } from './jungle-wildlife.js';
-import { addMacawRoost, resetDayWildlife, pauseDayWildlife, addAmbientMacaws, placeButterfliesInDepth, updateDayWildlifeWeather, updatePerchedMacaws } from './jungle-birds.js';
+import { addBatRoost, resetBats, pauseBats, addCaimans, addCapybaras, resetBankReactions, addAmbientBats, updateGrazingCapybaras, updateAutomaticBats } from './jungle-wildlife.js';
+import { addMacawRoost, resetDayWildlife, pauseDayWildlife, addAmbientMacaws, placeButterfliesInDepth, updateDayWildlifeWeather, updatePerchedMacaws, updateAutomaticMacaws } from './jungle-birds.js';
 import { addSquirrelMonkeys, updateSquirrelMonkeys } from './jungle-monkeys.js';
+import { addToucanRoost, resetToucans, pauseToucans, updatePerchedToucans, addAmbientToucan } from './jungle-toucans.js';
 // CSS draws the forest. Canvas retains the river, nearby foliage, and fireflies.
 const backdrop = document.querySelector('#jungle-backdrop');
 export const jungleRiverTop = (x, w, h) => {
@@ -8,8 +9,8 @@ export const jungleRiverTop = (x, w, h) => {
  return h*(.814+Math.sin(u*5+.4)*.006+.033*Math.exp(-(((u-.26)/.115)**2))+.044*Math.exp(-(((u-.61)/.14)**2))+.022*Math.exp(-(((u-.9)/.09)**2))+.0008*Math.sin(u*87)+.0005*Math.sin(u*143));
 };
 const resetAnimals = [];
-export function resetJungleAnimal() { resetAnimals.forEach(reset=>reset()); resetBats(); resetDayWildlife(); resetBankReactions(); }
-export function setJunglePaused(paused) { pauseBats(paused); pauseDayWildlife(paused); }
+export function resetJungleAnimal() { resetAnimals.forEach(reset=>reset()); resetBats(); resetDayWildlife(); resetBankReactions(); resetToucans(); }
+export function setJunglePaused(paused) { pauseBats(paused); pauseDayWildlife(paused); pauseToucans(paused); }
 function seeded(seed) { const value = Math.sin(seed * 127.1 + 311.7) * 43758.5453; return value - Math.floor(value); }
 function shape(tag, className, parent, variables = {}) {
  const node = document.createElement(tag);
@@ -106,18 +107,28 @@ for (const [depth, count] of [['far', 15], ['middle', 10], ['front', 5]]) {
    if (depth === 'front' && (i === 1 || i === 4)) addMacawRoost(crown,2);
    if (depth === 'middle' && i === 2) addSquirrelMonkeys(tree,7,true);
    if (depth === 'front' && i === 2) addSquirrelMonkeys(tree);
+   if(depth==='front'&&(i===0||i===2))addToucanRoost(crown,0);
+   if(depth==='front'&&(i===3||i===4))addToucanRoost(crown,1);
+   if((depth==='middle'&&i===6)||(depth==='front'&&i===1))addToucanRoost(crown,2);
   }
  }
  // Low foliage hides distant roots; nearer trunks overlap it instead of sharing a baseline.
  if (depth !== 'front') {
-  for (let patch = 0; patch < 13; patch++) shape('span', 'depth-undergrowth', layer, {
-   x: `${patch / 12 * 105 - 5}%`, width: `${8 + seeded(patch + 4100) * 6}%`,
-   height: `${3 + seeded(patch + 4200) * 4}%`,
-   bottom: depth === 'far' ? '8%' : '4%',
-   shade: depth === 'far' ? '#6b8e79' : '#4c765a',
-  });
+  const distant=depth==='far',count=distant?13:20,offset=distant?4100:4700;
+  for (let patch = 0; patch < count; patch++) {
+   const seed=offset+patch*17;
+   const foliage=shape('span', 'depth-undergrowth', layer, {
+    x: `${patch/(count-1)*109-7+(seeded(seed)-.5)*8}%`,
+    width: `${distant?14+seeded(seed+1)*13:6+seeded(seed+1)*12}%`,
+    height: `${distant?3.5+seeded(seed+2)*4.5:4+seeded(seed+2)*9}%`,
+    bottom: `${(distant?6:1.5)+seeded(seed+3)*(distant?2.5:4)}%`,
+    shade: (distant?['#658773','#6b8e79','#71917c']:['#476f55','#4c765a','#537a5d'])[patch%3],
+   });
+   foliage.style.borderRadius=`${25+seeded(seed+4)*45}% ${25+seeded(seed+5)*45}% 15% 20% / ${45+seeded(seed+6)*45}% ${40+seeded(seed+7)*50}% 15% 20%`;
+   foliage.style.transform=`rotate(${(seeded(seed+8)-.5)*12}deg)`;
+  }
  }
- if(depth==='middle') { addAmbientBats(layer);addAmbientMacaws(layer); }
+ if(depth==='middle') { addAmbientBats(layer);addAmbientMacaws(layer);addAmbientToucan(layer); }
 }
 shape('div', 'forest-haze', forestScene);
 shape('div', 'jungle-ground', forestScene);
@@ -163,7 +174,7 @@ for (let shrub = 0; shrub < 12; shrub++) {
    // The animal occupies a layer behind the bushes, so foliage hides its emergence.
    const track = shape('div', 'armadillo-track', forestScene, {
     'home-x': homeX, 'home-width': homeWidth,
-    ...(secondHome ? {walk:'clamp(-75px, -4vw, -45px)','initial-facing':-1,outing:'19s'} : {}),
+    ...(secondHome ? {walk:'clamp(-160px, -10vw, -75px)','initial-facing':-1,outing:'23s'} : {}),
    });
    track.setAttribute('aria-hidden', 'true');
    track.dataset.animal=secondHome?'1':'0';
@@ -231,6 +242,7 @@ for (let plant = 0; plant < 17; plant++) {
  const besideCapybara=plantX>=31&&plantX<38;
  if(besideCapybara)plantX=33;
  const clump = shape('div', 'bank-plant', forestScene, { x: `${plantX}%`, width: besideCapybara?'clamp(18px, 2vw, 36px)':'clamp(22px, 3.5vw, 65px)', height: besideCapybara?'5.5%':`${4 + seeded(plant + 1450) * 8}%`, duration: `${8 + seeded(plant + 1500) * 6}s` });
+ if(besideCapybara)forestScene.insertBefore(clump,forestScene.querySelector('.armadillo-track'));
  for (let blade = 0; blade < 5; blade++) shape('span', '', clump, { angle: `${-65 + blade * 29 + seeded(plant + blade + 1600) * 12}deg`, length: `${55 + seeded(plant + blade + 1700) * 45}%` });
 }
 addCaimans(forestScene);
@@ -242,6 +254,7 @@ const nearGround=shape('div','jungle-ground near-bank-ground',nearBank);
 const shoreDetails=document.createElementNS('http://www.w3.org/2000/svg','svg');
 shoreDetails.classList.add('shore-details');nearBank.append(shoreDetails);
 const nearerAnimals=[
+ [forestScene.querySelectorAll('.river-caiman')[0],.33],
  [forestScene.querySelectorAll('.river-caiman')[1],.49],
  [forestScene.querySelectorAll('.river-caiman')[2],.23],
  [forestScene.querySelectorAll('.river-caiman')[3],.57],
@@ -257,9 +270,29 @@ for(const [animal,x] of nearerAnimals) {
 function placeNearBank() {
  const w=innerWidth,h=innerHeight;
  const edge=Array.from({length:101},(_,i)=>`${i}% ${jungleRiverTop(i/100*w,w,h)/h*100}%`);
- nearGround.style.clipPath=`polygon(0 81.4%,100% 81.4%,${edge.reverse().join(',')})`;
+ nearGround.style.clipPath=`polygon(0 79.4%,100% 79.4%,${edge.reverse().join(',')})`;
  shoreDetails.setAttribute('viewBox',`0 0 ${w} ${h}`);shoreDetails.setAttribute('preserveAspectRatio','none');
  let marks='';
+ // Small deposits follow the curved waterline rather than forming a second beach.
+ const deposits=[
+  [.015,.165,.017,[0,.7,1,.5,.32,.15,0]],
+  [.195,.375,.031,[0,.18,.25,.8,1,.85,.45,.12,0]],
+  [.425,.515,.014,[0,.35,.8,1,.5,.2,0]],
+  [.555,.705,.029,[0,.55,.95,1,.62,.9,.3,0]],
+  [.805,.975,.02,[0,.3,.8,.45,.25,.5,.12,0]],
+ ];
+ for(const [patch,[start,end,depth,profile]] of deposits.entries()) {
+  const top=[],bottom=[],wet=[];
+  for(let j=0;j<=32;j++) {
+   const t=j/32,x=(start+(end-start)*t)*w,y=jungleRiverTop(x,w,h);
+   const p=t*(profile.length-1),k=Math.min(profile.length-2,Math.floor(p)),f=p-k;
+   const taper=profile[k]+(profile[k+1]-profile[k])*(f*f*(3-2*f));
+   const rise=h*depth*taper*(.94+.06*Math.sin(t*(21+patch*7)+patch));
+   top.push(`${x},${y-rise}`);bottom.unshift(`${x},${y-.5}`);
+   wet.push(`${x},${y-h*.0035*taper}`);
+  }
+  marks+=`<polygon class="shore-sand" points="${top.concat(bottom).join(' ')}"/><polygon class="shore-wet-sand" points="${wet.concat(bottom).join(' ')}"/>`;
+ }
  for(const u of [.085,.48,.79,.93]) {
   const x=u*w,y=jungleRiverTop(x,w,h)-h*.004;
   marks+=`<path class="shore-root" d="M${x-11} ${y-11} Q${x-6} ${y-2} ${x+12} ${y} M${x-3} ${y-5} Q${x+5} ${y-8} ${x+18} ${y-3}"/>`;
@@ -276,7 +309,8 @@ export function drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, 
  updateSquirrelMonkeys(time,night);
  updateGrazingCapybaras(time);
  updateDayWildlifeWeather();
- updatePerchedMacaws(time);
+ updatePerchedMacaws(time);updatePerchedToucans(time);
+ updateAutomaticMacaws(time);updateAutomaticBats(time);
  const gradient = (top, bottom, colors) => {
   const g = ctx.createLinearGradient(0, top, 0, bottom);
   colors.forEach((color, i) => g.addColorStop(i / (colors.length - 1), color));
@@ -370,4 +404,22 @@ export function drawJungle(ctx, { w, h, time, night, cloudCover, rainfall, mix, 
  const vignette = ctx.createRadialGradient(w * .55, h * .48, h * .1, w * .55, h * .48, Math.max(w, h) * .7);
  vignette.addColorStop(0, 'rgba(4,24,18,0)'); vignette.addColorStop(1, `rgba(4,24,18,${.14 - sunshine * .09 + night * .36 + cloudCover * .07 * (1 - night)})`);
  ctx.fillStyle = vignette; ctx.fillRect(0, 0, w, h);
+ // Eye reflections sit above forest grading so they remain readable at night.
+ if(night>.05) {
+  ctx.save();
+  for(const roost of forestScene.querySelectorAll('.tree-eyes[data-roost-active=true]')) {
+   const r=roost.getBoundingClientRect(),scale=r.width/roost.offsetWidth;
+   for(const [i,pair] of [...roost.querySelectorAll('.roost-pair')].entries()) {
+    const phase=(time/(9+i%5*1.7)+i*.371+Number(roost.dataset.group)*.23)%1;
+    if(phase>.95)continue;
+    const glint=phase<.11?Math.sin(phase/.11*Math.PI)**3:0;
+    const x=r.x+parseFloat(pair.style.getPropertyValue('--pair-x'))/100*r.width;
+    const y=r.y+parseFloat(pair.style.getPropertyValue('--pair-y'))/100*r.height;
+    ctx.globalAlpha=night*(.4+glint*.55);ctx.fillStyle=glint>.3?'#fff0bf':'#c5c39b';
+    ctx.shadowColor='#dfd49b';ctx.shadowBlur=glint*5;
+    for(let eye=0;eye<2;eye++){ctx.beginPath();ctx.ellipse(x+(1+eye*3.9)*scale,y+scale,.85*scale,.68*scale,0,0,Math.PI*2);ctx.fill();}
+   }
+  }
+  ctx.restore();
+ }
 }

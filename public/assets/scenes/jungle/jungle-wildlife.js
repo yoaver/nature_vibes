@@ -2,6 +2,16 @@ import { sebaBatArt } from './bat-models.js';
 // Seba's short-tailed bats use local vector shapes and browser animations.
 const groups = Array.from({length:3},(_,i)=>({roosts:[],flights:[],home:i===2?1:0,start:i===2?1:0,generation:0}));
 let paused = false;
+let automaticTime=0,nextAutomatic=0;
+export function updateAutomaticBats(time) {
+ automaticTime=time;
+ if(document.body.dataset.time!=='night'||paused||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ groups.forEach((group,i)=>group.nextFlight??=time+[91,147,207][i]);
+ if(document.body.dataset.weather==='rainy'){groups.forEach((group,i)=>group.nextFlight=Math.max(group.nextFlight,time+22+i*17));return;}
+ if(time<nextAutomatic||groups.some(g=>g.flights.length))return;
+ const index=groups.findIndex(g=>time>=g.nextFlight&&g.roosts.length===2);
+ if(index>=0){nextAutomatic=time+39;flyFrom(index,groups[index].home);}
+}
 const bankReactions = new Map();
 const grazers=[];
 function capyLeg(x,y,hind=false,far=false) {
@@ -88,8 +98,10 @@ function updateRoosts(group, busy = false) {
  });
 }
 export function resetBats() {
+ nextAutomatic=0;
  for(const group of groups) {
   group.generation++;
+  group.nextFlight=null;
   for(const animation of group.flights)animation.cancel();
   group.flights.length=0;group.home=group.start;updateRoosts(group);
  }
@@ -114,6 +126,7 @@ function makeBat(index, direction) {
 async function flyFrom(groupId, source) {
  const group=groups[groupId],roosts=group.roosts,flights=group.flights;
  if (source !== group.home || flights.length || document.body.dataset.time !== 'night' || roosts.length !== 2) return;
+ group.nextFlight=automaticTime+142+groupId*45;
  const token = ++group.generation;
  const destination = 1 - source;
  const from = roosts[source].getBoundingClientRect();
@@ -216,16 +229,19 @@ export function addCaimans(parent) {
    <path class="caiman-neck" d="M99 19 Q112 16 125 19 L128 29 Q115 34 99 31Z" fill="#697255"/>
    <path d="M105 24 L117 29 L118 36 L123 38 L113 39 L110 32 L101 29Z" fill="#687454"/>
    <g class="caiman-head">
-   <path d="M111 18 Q124 11 136 18 L164 22 Q170 26 163 30 L126 31 L110 30Z" fill="#5b7953"/>
-   <path d="M123 29 L162 28" fill="none" stroke="#304c36" stroke-width="1.2"/>
-   <path d="M121 18 Q128 11 135 17 L140 19" fill="none" stroke="#8d9c6c" stroke-width="2.2"/>
-   <ellipse cx="159" cy="23" rx="1.4" ry=".9" fill="#2c4532"/>
-   <ellipse class="caiman-eye-open caiman-eyeshine" cx="129" cy="17.6" rx="2.4" ry="1.8" fill="#c0b478"/>
-   <ellipse class="caiman-eye-open" cx="129" cy="17.6" rx=".65" ry="1.6" fill="#243d2c"/>
-   <path class="caiman-eye-closed" d="M126 18 Q129 20 132 18" fill="none" stroke="#2c4532" stroke-width="1.3"/>
+   <path d="M110 19 L116 16 Q121 12 127 16 L136 19 L150 20 Q157 19 159 23 L158 27 Q146 29 135 28 L123 29 L111 28Z" fill="#647651"/>
+   <path d="M122 25 Q138 26 158 24 L158 27 L135 29 L122 28Z" fill="#858664"/>
+   <path d="M125 27 L154 26" fill="none" stroke="#3d4d35" stroke-width=".8"/>
+   <path d="M117 17 Q121 13 126 16 L133 18" fill="none" stroke="#90946a" stroke-width="1.5"/>
+   <path d="M135 21 l6 .5 M146 22 l4 .3" stroke="#89916b" stroke-width=".7" opacity=".6"/>
+   <ellipse cx="154" cy="21.7" rx="1" ry=".65" fill="#344733"/>
+   <ellipse class="caiman-eye-open caiman-eyeshine" cx="124" cy="17" rx="1.6" ry="1.25" fill="#a69d63"/>
+   <ellipse class="caiman-eye-open" cx="124" cy="17" rx=".45" ry="1.15" fill="#243d2c"/>
+   <path class="caiman-eye-closed" d="M122 17 Q124 18.4 126 17" fill="none" stroke="#344733" stroke-width="1"/>
    </g>
-   <path d="M55 18 Q60 14 66 17 L74 15 L81 17 L89 15 L99 18 L110 18" fill="#4b553e"/>
-   <path d="M32 27 L35 31 M47 19 L50 24" stroke="#3f4935" stroke-width="1" opacity=".55"/>
+   <path d="M55 18 L61 14 L66 17 L73 13 L78 16 L85 13 L90 16 L97 14 L102 18 L110 18" fill="#444d36"/>
+   <path d="M64 22 L103 22 M63 27 L101 27" stroke="#89906a" stroke-width=".8" stroke-dasharray="2 4"/>
+   <path d="M30 27 L33 32 M41 19 L45 27 M51 17 L54 23" stroke="#3f4935" stroke-width="1.5"/>
   </svg>`;
   parent.append(caiman);
   caiman.removeAttribute('aria-hidden');
@@ -275,19 +291,24 @@ export function addCapybaras(parent) {
     ${capyLeg(46,44,false,true)}
     ${capyLeg(90,44,true,true)}
    </g>
-   <path class="capy-body" d="M34 26 Q45 18 66 19 Q91 16 101 29 Q108 44 99 54 Q91 60 76 58 L49 57 Q34 55 32 40Z" fill="${member.baby ? '#b2a07e' : '#9e8a6b'}"/>
+   <g class="capy-body">
+    <path d="M34 26 Q45 18 66 19 Q91 16 101 29 Q108 44 99 54 Q91 60 76 58 L49 57 Q34 55 32 40Z" fill="${member.baby ? '#b2a07e' : '#9e8a6b'}"/>
+    <path d="M51 32 q-1 1 -1 3 M66 28 q1 1 0 3 M81 31 q-1 1 -1 3 M92 37 q1 1 0 3 M67 45 q-1 1 -1 3" fill="none" stroke="#c0aa86" stroke-width=".65" stroke-linecap="round" opacity=".28"/>
+   </g>
    <g class="capy-legs" fill="#99876a">
     ${capyLeg(39,44)}
     ${capyLeg(84,44,true)}
    </g>
    <g class="capy-sitting-feet" fill="#99876a">
     <path d="M39 48 L43 49 L41 65 L45 68 L44 70 L35 70 L35 66Z M78 55 Q93 54 96 63 L92 68 L79 69 L75 65Z"/>
+    <path d="M37 68 L38 70 M40 68 L41 70 M83 67 L84 69 M87 66 L88 68" stroke="#625b46" stroke-width=".8"/>
    </g>
    <g class="capy-head">
     <path d="M12 26 Q16 23 24 23 Q31 19 38 20 Q46 21 47 30 L46 38 Q42 44 32 43 L15 41 Q9 40 9 35 L9 30 Q9 27 12 26Z" fill="${member.baby ? '#b8a583' : '#a59172'}"/>
     <ellipse class="capy-ear" cx="39" cy="18" rx="2.5" ry="3" fill="#806b50"/>
     <ellipse cx="39" cy="18" rx="1.1" ry="1.7" fill="#b09a7c"/>
     <path d="M11 30 l1.5 -.4 M12 37 Q16 38 20 37.5" stroke="#716249" stroke-width=".8" stroke-linecap="round" fill="none"/>
+    <path d="M34 38 Q40 39 43 35 M21 28 l2 -1 M24 30 l2 -1" stroke="#c0ac88" stroke-width=".65" opacity=".45" fill="none"/>
     <path class="capy-eye-open" d="M28.5 26 Q30 25.5 31.5 26 Q30 28 28.5 26Z" fill="#433c2d"/>
     <path class="capy-eye-closed" d="M28 25 Q30 27 32 25" stroke="#57452f" stroke-width="1.1" fill="none"/>
    </g>

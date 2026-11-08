@@ -7,6 +7,16 @@ let landingGeneration = 0, landingIndex = 0;
 let rainSheltered=false;
 const groupSpecies=[5,6,8].map(count=>Array.from({length:count},(_,i)=>i%3===1?'hyacinth':'scarlet'));
 let paused = false;
+let automaticTime=0,nextAutomatic=0;
+export function updateAutomaticMacaws(time) {
+ automaticTime=time;
+ if(document.body.dataset.time!=='day'||paused||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ groups.forEach((group,i)=>group.nextFlight??=time+[78,131,188][i]);
+ if(document.body.dataset.weather==='rainy') {groups.forEach((group,i)=>group.nextFlight=Math.max(group.nextFlight,time+20+i*13));return;}
+ if(time<nextAutomatic||groups.some(g=>g.flights.length))return;
+ const index=groups.findIndex(g=>time>=g.nextFlight&&g.roosts.length===2);
+ if(index>=0){nextAutomatic=time+36;transfer(index,groups[index].home);}
+}
 const layer = document.createElement('div');
 layer.className = 'day-jungle-wildlife';
 layer.setAttribute('aria-hidden','true');
@@ -30,10 +40,10 @@ function birdArt(kind, flying = false) {
  <ellipse cx="17" cy="31" rx="10" ry="18" fill="${body}"/>
  <path d="M11 20 Q3 27 10 48 L19 41 L21 24Z" fill="${wing}"/>
  ${blue ? '' : '<path d="M10 33 L10 48 L19 41 L21 34Z" fill="#3476af"/>'}
- <circle cx="19" cy="14" r="9" fill="${body}"/>
+ <g class="macaw-head-motion"><circle cx="19" cy="14" r="9" fill="${body}"/>
  <g class="macaw-face"><ellipse cx="23" cy="14" rx="4" ry="5" fill="${blue ? '#dbbf53' : '#e8ddc7'}"/>
  <circle cx="24" cy="12" r="1.2" fill="#202b2e"/>
- <path d="M27 10 Q37 12 30 23 L26 18 L29 15Z" fill="#343a3e"/></g>
+ <path d="M27 10 Q37 12 30 23 L26 18 L29 15Z" fill="#343a3e"/></g></g>
  <path d="M15 44 L15 49 L20 49 M21 43 L22 49 L26 49" stroke="#62604d" stroke-width="1.6" fill="none"/>
  </svg>`;
 }
@@ -45,8 +55,10 @@ function update(group, busy = false) {
  });
 }
 export function resetDayWildlife() {
+ nextAutomatic=0;
  for(const group of groups) {
   group.generation++;
+  group.nextFlight=null;
   for(const flight of group.flights)flight.cancel();
   for(const roost of group.roosts) { delete roost.dataset.arriving;roost.querySelectorAll('.perched-macaw').forEach(bird=>bird.style.visibility=''); }
   group.flights.length=0;group.home=group.start;update(group);
@@ -62,6 +74,7 @@ export function pauseDayWildlife(value) {
 async function transfer(groupId,source) {
  const group=groups[groupId],roosts=group.roosts,flights=group.flights;
  if (source !== group.home || flights.length || roosts.length !== 2 || document.body.dataset.time !== 'day') return;
+ group.nextFlight=automaticTime+130+groupId*39;
  const token = ++group.generation, destination = 1-source;
  const from = roosts[source].getBoundingClientRect(), to = roosts[destination].getBoundingClientRect();
  const x0=from.x+from.width/2, y0=from.y+from.height/2;
@@ -131,6 +144,8 @@ export function addMacawRoost(crown,groupId=0) {
   const bird=document.createElement('span'); bird.className=`perched-macaw ${kind}`;
   if(index%4===2)bird.classList.add('turned-away');
   bird.style.setProperty('--bird-facing',index%2? -1:1); bird.style.setProperty('--delay',`${-index*1.2}s`);
+  bird.style.setProperty('--head-period',`${9.7+index*1.13+groupId*1.7}s`);
+  bird.style.setProperty('--head-offset',`${-index*3.7-groupId*5.3}s`);
   bird.style.setProperty('--perch-x',`${(perchPoints[index][0]-11)/135*100}%`);
   bird.style.setProperty('--perch-y',`${(perchPoints[index][1]-38)/110*100}%`);
   bird.innerHTML=birdArt(kind); roost.append(bird);
